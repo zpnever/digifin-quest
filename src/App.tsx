@@ -1,4 +1,6 @@
-import React, { useState, useMemo, createContext, useContext } from "react";
+import React, { useState, useMemo, createContext, useContext, useEffect } from "react";
+import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 /* ---------- LOGO INSTITUSI (base64-embedded) ---------- */
 const AACSB_LOGO = "data:image/jpeg;base64,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";
@@ -20,15 +22,17 @@ const FEB_UNJ_LOGO = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUN
    Firebase migration is mechanical, not a rewrite.
    ============================================================ */
 
-/* ---------- THEME ---------- */
+/* ---------- THEME & CONTEXT ---------- */
 const ThemeCtx = createContext({ dark: false, toggle: () => {} });
 const useTheme = () => useContext(ThemeCtx);
+const ModuleCtx = createContext([]);
+const useModules = () => useContext(ModuleCtx);
 
 /* ---------- DOMAIN DATA: MODULES + 50 QUIZ QUESTIONS ----------
    Each question: { q, options[4], answer (index), explanation, difficulty }
    difficulty: "mudah" | "sedang" | "sulit"
 */
-const MODULES = [
+let MODULES = [
   {
     id: "m1",
     title: "Fintech Basics",
@@ -472,8 +476,9 @@ const NAVY = "#0B1F3A";
    ============================================================ */
 export default function App() {
   const [dark, setDark] = useState(false);
-  const [page, setPage] = useState("landing"); // landing | login | register | student | admin
   const [user, setUser] = useState(null);
+  const [modules, setModules] = useState([]);
+  const navigate = useNavigate();
 
   const [progress, setProgress] = useState({
     completedLessons: {}, quizScores: {}, points: 0, badges: [],
@@ -488,29 +493,94 @@ export default function App() {
     [progress.points, user]
   );
 
-  const theme = { dark, toggle: () => setDark((d) => !d) };
+  useEffect(() => {
+    const isDark = localStorage.getItem('darkMode') === 'true';
+    setDark(isDark);
+    
+    // Fetch modules
+    fetch('http://localhost:3000/api/modules')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.length > 0) {
+          // Parse JSON strings back to objects since Prisma stores them as JSON
+          const parsed = data.map(m => ({ ...m, lesson: typeof m.lesson === 'string' ? JSON.parse(m.lesson) : m.lesson, quiz: typeof m.quiz === 'string' ? JSON.parse(m.quiz) : m.quiz }));
+          MODULES = parsed;
+          setModules(parsed);
+        } else {
+          setModules(MODULES);
+        }
+      })
+      .catch(() => setModules(MODULES));
+  }, []);
 
-  function authenticate(name, role) {
+  const toggleDark = () => {
+    const nextDark = !dark;
+    setDark(nextDark);
+    localStorage.setItem('darkMode', String(nextDark));
+  };
+
+  const theme = { dark, toggle: toggleDark };
+
+  async function authenticate(name, role) {
     setUser({ name, role });
     const today = new Date().toDateString();
-    setProgress((p) => {
-      if (p.lastLoginDay === today && p.points > 0) return p;
-      const yesterday = new Date(Date.now() - 86400000).toDateString();
-      const newRentetan = p.lastLoginDay === yesterday ? p.streak + 1 : p.streak;
-      const badges = [...p.badges];
-      if (newRentetan >= 5 && !badges.includes("streak5")) badges.push("streak5");
-      return { ...p, points: p.points + POINTS.dailyLogin, streak: newRentetan, lastLoginDay: today, badges };
-    });
-    setPage(role === "admin" ? "admin" : "student");
+    const token = localStorage.getItem('token');
+    
+    try {
+      const res = await fetch('http://localhost:3000/api/progress', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const dbProgress = data.progress || {};
+        setProgress((p) => ({
+          ...p,
+          points: dbProgress.points || 0,
+          streak: dbProgress.streak || 1,
+          badges: dbProgress.badges || [],
+          claimedChallenges: dbProgress.claimedChallenges || [],
+          lastLoginDay: today,
+          completedLessons: data.lessonProgress?.reduce((acc, lp) => ({ ...acc, [lp.moduleId]: true }), {}) || {},
+          quizScores: data.quizScores?.reduce((acc, qs) => ({ ...acc, [qs.moduleId]: { pct: qs.pct, correct: qs.correct, total: qs.total } }), {}) || {},
+          scenarioResults: data.scenarioResults?.reduce((acc, sr) => ({ ...acc, [sr.scenarioId]: { choiceIndex: sr.choiceIndex, quality: sr.quality } }), {}) || {},
+          simResult: data.simResult || null
+        }));
+      }
+    } catch (err) {
+      console.error('Failed to load progress', err);
+    }
+    
+    navigate(role === "admin" ? "/admin" : "/dashboard");
   }
 
-  function logout() { setUser(null); setPage("landing"); }
+  // Sync progress ke backend tiap kali ada perubahan
+  useEffect(() => {
+    if (!user || user.role === 'admin') return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    const timeoutId = setTimeout(() => {
+      fetch('http://localhost:3000/api/progress/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(progress)
+      }).catch(err => console.error('Sync error', err));
+    }, 2000);
+    return () => clearTimeout(timeoutId);
+  }, [progress, user]);
+
+  function logout() { 
+    setUser(null); 
+    localStorage.removeItem('token');
+    navigate("/"); 
+  }
 
   return (
     <ThemeCtx.Provider value={theme}>
-      <div className={dark ? "dark" : ""}>
-        <div className="min-h-screen bg-white text-slate-900 dark:bg-[#0B1F3A] dark:text-slate-100 transition-colors"
-             style={{ fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif" }}>
+      <ModuleCtx.Provider value={modules}>
+        <div className={dark ? "dark" : ""}>
+          <div className="min-h-screen bg-white text-slate-900 dark:bg-[#0B1F3A] dark:text-slate-100 transition-colors"
+               style={{ fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif" }}>
           <style>{`
             @keyframes fq-pop { 0%{transform:scale(.8);opacity:0} 60%{transform:scale(1.05)} 100%{transform:scale(1);opacity:1} }
             @keyframes fq-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
@@ -525,13 +595,17 @@ export default function App() {
             .fq-press:active { transform: translateY(2px); }
             .fq-shine { background-size:200% auto; animation: fq-shine 3s linear infinite; }
           `}</style>
-          {page === "landing" && <Landing onLogin={() => setPage("login")} onRegister={() => setPage("register")} />}
-          {page === "login" && <AuthScreen mode="login" onAuth={authenticate} onSwap={() => setPage("register")} onHome={() => setPage("landing")} />}
-          {page === "register" && <AuthScreen mode="register" onAuth={authenticate} onSwap={() => setPage("login")} onHome={() => setPage("landing")} />}
-          {page === "student" && <StudentApp user={user} progress={progress} setProgress={setProgress} onKeluar={logout} cohort={cohort} />}
-          {page === "admin" && <AdminApp user={user} cohort={cohort} progress={progress} onKeluar={logout} />}
+          <Routes>
+            <Route path="/" element={<Landing onLogin={() => navigate("/login")} onRegister={() => navigate("/register")} />} />
+            <Route path="/login" element={<AuthScreen mode="login" onAuth={authenticate} onSwap={() => navigate("/register")} onHome={() => navigate("/")} />} />
+            <Route path="/register" element={<AuthScreen mode="register" onAuth={authenticate} onSwap={() => navigate("/login")} onHome={() => navigate("/")} />} />
+            <Route path="/register/admin" element={<AdminAuthScreen onAuth={authenticate} onHome={() => navigate("/")} />} />
+            <Route path="/dashboard" element={user ? <StudentApp user={user} progress={progress} setProgress={setProgress} onKeluar={logout} cohort={cohort} /> : <Navigate to="/login" />} />
+            <Route path="/admin" element={user ? <AdminApp user={user} cohort={cohort} progress={progress} onKeluar={logout} /> : <Navigate to="/login" />} />
+          </Routes>
         </div>
       </div>
+      </ModuleCtx.Provider>
     </ThemeCtx.Provider>
   );
 }
@@ -590,6 +664,7 @@ function GoldChip({ children }) {
    LANDING PAGE
    ============================================================ */
 function Landing({ onLogin, onRegister }) {
+  const MODULES = useModules();
   return (
     <div>
       {/* Nav */}
@@ -692,8 +767,41 @@ function Landing({ onLogin, onRegister }) {
    ============================================================ */
 function AuthScreen({ mode, onAuth, onSwap, onHome }) {
   const [name, setName] = useState("");
-  const [role, setRole] = useState("student");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const isLogin = mode === "login";
+
+  async function handleSubmit() {
+    setLoading(true);
+    try {
+      const url = isLogin ? 'http://localhost:3000/api/auth/login' : 'http://localhost:3000/api/auth/register';
+      const body = isLogin ? { email, password } : { name: name.trim() || "Student", email, password, role: "student" };
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Terjadi kesalahan');
+      
+      if (!isLogin) {
+        toast.success('Registrasi berhasil! Silakan login.');
+        onSwap();
+      } else {
+        localStorage.setItem('token', data.token);
+        onAuth(data.user.name, data.user.role);
+      }
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') handleSubmit();
+  };
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
@@ -725,31 +833,21 @@ function AuthScreen({ mode, onAuth, onSwap, onHome }) {
 
           {!isLogin && (
             <>
-              <label className="block text-sm font-medium mb-1">Email</label>
-              <input placeholder="anda@kampus.ac.id" className="w-full mb-4 rounded-xl border border-slate-300 dark:border-white/15 bg-transparent px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+              <label className="block text-sm font-medium mb-1">Nama</label>
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="mis. Rina"
+                className="w-full mb-4 rounded-xl border border-slate-300 dark:border-white/15 bg-transparent px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
             </>
           )}
 
-          <label className="block text-sm font-medium mb-1">Nama</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="mis. Rina"
-            className="w-full mb-4 rounded-xl border border-slate-300 dark:border-white/15 bg-transparent px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+          <label className="block text-sm font-medium mb-1">Email</label>
+          <input value={email} onKeyDown={handleKeyDown} onChange={(e) => setEmail(e.target.value)} placeholder="anda@kampus.ac.id" className="w-full mb-4 rounded-xl border border-slate-300 dark:border-white/15 bg-transparent px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
 
           <label className="block text-sm font-medium mb-1">Kata Sandi</label>
-          <input type="password" placeholder="••••••••" className="w-full mb-4 rounded-xl border border-slate-300 dark:border-white/15 bg-transparent px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+          <input type="password" onKeyDown={handleKeyDown} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full mb-6 rounded-xl border border-slate-300 dark:border-white/15 bg-transparent px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
 
-          <label className="block text-sm font-medium mb-1">Role</label>
-          <div className="grid grid-cols-2 gap-3 mb-6">
-            {[["student", "🎓 Mahasiswa"], ["admin", "🧑‍🏫 Dosen/Admin"]].map(([val, label]) => (
-              <button key={val} onClick={() => setRole(val)}
-                className={cls("rounded-xl border px-4 py-3 text-sm font-semibold transition",
-                  role === val ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                    : "border-slate-300 dark:border-white/15 hover:border-emerald-400")}>{label}</button>
-            ))}
-          </div>
-
-          <button onClick={() => onAuth(name.trim() || (role === "admin" ? "Lecturer" : "Student"), role)}
-            className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 transition shadow-lg shadow-emerald-500/30">
-            {isLogin ? "Masuk" : "Buat akun"} →
+          <button onClick={handleSubmit} disabled={loading}
+            className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 transition shadow-lg shadow-emerald-500/30 disabled:opacity-50">
+            {loading ? "Memproses..." : (isLogin ? "Masuk" : "Buat akun")} →
           </button>
           <button onClick={onSwap} className="w-full text-center text-sm text-slate-500 dark:text-slate-400 mt-4 hover:text-emerald-500">
             {isLogin ? "Baru di sini? Buat akun" : "Sudah punya akun? Masuk"}
@@ -761,9 +859,75 @@ function AuthScreen({ mode, onAuth, onSwap, onHome }) {
 }
 
 /* ============================================================
+   ADMIN AUTH (Register with secret code)
+   ============================================================ */
+function AdminAuthScreen({ onAuth, onHome }) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [secretCode, setSecretCode] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit() {
+    setLoading(true);
+    try {
+      const res = await fetch('http://localhost:3000/api/auth/register-admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password, secretCode })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Terjadi kesalahan');
+      
+      toast.success('Akun Admin berhasil dibuat! Silakan login.');
+      onHome();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') handleSubmit();
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 dark:bg-[#0B1F3A]">
+      <Card className="w-full max-w-md p-8">
+        <div className="flex justify-between items-center mb-6">
+          <button onClick={onHome}><Brand /></button>
+          <span className="text-sm text-slate-400">Admin Register</span>
+          <ThemeToggle />
+        </div>
+        <h2 className="text-2xl font-bold mb-1">Daftar sebagai Admin/Dosen</h2>
+        <p className="text-slate-500 dark:text-slate-400 mb-6 text-sm">Masukkan kode rahasia untuk melanjutkan.</p>
+
+        <label className="block text-sm font-medium mb-1">Nama Lengkap</label>
+        <input value={name} onChange={(e) => setName(e.target.value)} onKeyDown={handleKeyDown} className="w-full mb-4 rounded-xl border border-slate-300 dark:border-white/15 bg-transparent px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+
+        <label className="block text-sm font-medium mb-1">Email</label>
+        <input value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={handleKeyDown} className="w-full mb-4 rounded-xl border border-slate-300 dark:border-white/15 bg-transparent px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+
+        <label className="block text-sm font-medium mb-1">Kata Sandi</label>
+        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={handleKeyDown} className="w-full mb-4 rounded-xl border border-slate-300 dark:border-white/15 bg-transparent px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+
+        <label className="block text-sm font-medium mb-1">Kode Rahasia Institusi</label>
+        <input type="password" value={secretCode} onChange={(e) => setSecretCode(e.target.value)} onKeyDown={handleKeyDown} placeholder="Misal: FEB-UNJ-ADMIN" className="w-full mb-6 rounded-xl border border-rose-300 dark:border-rose-500/50 bg-transparent px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-rose-500" />
+
+        <button onClick={handleSubmit} disabled={loading}
+          className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 transition shadow-lg shadow-emerald-500/30 disabled:opacity-50">
+          {loading ? "Memproses..." : "Buat Akun Admin"} →
+        </button>
+      </Card>
+    </div>
+  );
+}
+/* ============================================================
    STUDENT APP
    ============================================================ */
 function StudentApp({ user, progress, setProgress, onKeluar, cohort }) {
+  const MODULES = useModules();
   const [tab, setTab] = useState("dashboard");
   const [activeModule, setActiveModule] = useState(null);
 
@@ -1693,6 +1857,7 @@ function ResearchAnalytics({ user, progress }) {
 }
 
 function Profile({ user, progress, lvl, next, completedCount }) {
+  const MODULES = useModules();
   const toNext = next ? next.min - progress.points : 0;
   const lvlPct = next ? Math.round(((progress.points - lvl.min) / (next.min - lvl.min)) * 100) : 100;
   return (
@@ -1752,6 +1917,7 @@ function Profile({ user, progress, lvl, next, completedCount }) {
    ADMIN / LECTURER APP
    ============================================================ */
 function AdminApp({ user, cohort, progress, onKeluar }) {
+  const MODULES = useModules();
   const [tab, setTab] = useState("overview");
   const ranked = [...cohort].sort((a, b) => b.points - a.points);
   const totalUsers = cohort.length;
@@ -1809,13 +1975,31 @@ function AdminApp({ user, cohort, progress, onKeluar }) {
 
       {tab === "content" && (
         <Card className="p-6">
-          <h3 className="font-bold text-lg mb-4">Modul & Materi</h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">Pada produksi, panel ini membuat/menyunting modul, mengunggah materi, dan menyusun kuis (menulis ke Firestore <code>modules</code> & <code>quizzes</code>). Berikut katalog konten saat ini.</p>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-bold text-lg">Modul & Materi</h3>
+            <button onClick={() => toast.error('Fitur tambah & edit form masih dalam pengembangan untuk prototype.')} className="px-3 py-1.5 rounded-lg bg-emerald-500 text-white font-semibold text-sm">
+              + Tambah Modul
+            </button>
+          </div>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">Pada produksi, panel ini membuat/menyunting modul, mengunggah materi, dan menyusun kuis. Berikut katalog konten saat ini.</p>
           <div className="space-y-3">
             {MODULES.map((m, i) => (
               <div key={m.id} className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-white/10 px-4 py-3">
-                <div><p className="font-semibold">Modul {i + 1}: {m.title}</p><p className="text-xs text-slate-500">{m.topics.join(" · ")} · {m.quiz.length} soal</p></div>
-                <span className="text-xs px-2 py-1 rounded-md bg-emerald-100 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-300">Terbit</span>
+                <div>
+                  <p className="font-semibold">Modul {i + 1}: {m.title}</p>
+                  <p className="text-xs text-slate-500">{m.topics.join(" · ")} · {m.quiz.length} soal</p>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => toast.error('Fitur Edit belum tersedia.')} className="text-xs px-3 py-1.5 rounded-md bg-amber-100 dark:bg-amber-500/15 text-amber-600 dark:text-amber-300">Edit</button>
+                  <button onClick={async () => {
+                    if (!confirm('Hapus modul ini?')) return;
+                    try {
+                      const res = await fetch(`http://localhost:3000/api/modules/${m.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }});
+                      if (res.ok) { toast.success('Dihapus!'); setTimeout(() => window.location.reload(), 1000); }
+                      else toast.error('Gagal hapus');
+                    } catch(e) {}
+                  }} className="text-xs px-3 py-1.5 rounded-md bg-rose-100 dark:bg-rose-500/15 text-rose-600 dark:text-rose-300">Hapus</button>
+                </div>
               </div>
             ))}
           </div>
