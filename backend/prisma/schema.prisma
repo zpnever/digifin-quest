@@ -1,0 +1,226 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  role         String   @default("student")
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  progress        UserProgress?
+  completedLessons CompletedLesson[]
+  quizAttempts     QuizAttempt[]
+  quizScores       QuizScore[]
+  badgeAwards      BadgeAward[]
+  scenarioAttempts ScenarioAttempt[]
+  simulationResult SimulationResult?
+  challengeClaims  DailyChallengeClaim[]
+  pointLedger      PointLedger[]
+}
+
+model UserProgress {
+  id           String @id @default(cuid())
+  userId       String @unique
+  points       Int    @default(0)
+  streak       Int    @default(1)
+  lastLoginDay String
+  todayLessons Int    @default(0)
+  joined       String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Module {
+  id        String  @id
+  title     String
+  topics    Json
+  intro     String
+  example   Json
+  takeaways Json
+  order     Int
+  published Boolean @default(true)
+
+  sections      LessonSection[]
+  quizQuestions QuizQuestion[]
+}
+
+model LessonSection {
+  id       String @id @default(cuid())
+  moduleId String
+  heading  String
+  body     String
+  order    Int
+
+  module Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+}
+
+model QuizQuestion {
+  id          String @id @default(cuid())
+  moduleId    String
+  question    String
+  options     Json
+  answer      Int
+  explanation String
+  difficulty  String
+  order       Int
+
+  module Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+}
+
+model CompletedLesson {
+  userId    String
+  moduleId  String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, moduleId])
+}
+
+model QuizAttempt {
+  id        String   @id @default(cuid())
+  userId    String
+  moduleId  String
+  answers   Json
+  correct   Int
+  total     Int
+  pct       Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model QuizScore {
+  userId   String
+  moduleId String
+  correct  Int
+  total    Int
+  pct      Int
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, moduleId])
+}
+
+model Badge {
+  id   String @id
+  name String
+  desc String
+  icon String
+
+  awards BadgeAward[]
+}
+
+model BadgeAward {
+  userId    String
+  badgeId   String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, badgeId])
+}
+
+model Level {
+  lvl  Int    @id
+  name String
+  min  Int
+}
+
+model PointRule {
+  key   String @id
+  value Int
+}
+
+model DailyChallenge {
+  id   String @id
+  text String
+
+  claims DailyChallengeClaim[]
+}
+
+model DailyChallengeClaim {
+  userId      String
+  challengeId String
+  createdAt   DateTime @default(now())
+
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge DailyChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, challengeId])
+}
+
+model SeedPeer {
+  id     String @id @default(cuid())
+  name   String
+  points Int
+}
+
+model Scenario {
+  id        String @id
+  theme     String
+  situation String
+  choices   Json
+  order     Int
+
+  attempts ScenarioAttempt[]
+}
+
+model ScenarioAttempt {
+  userId      String
+  scenarioId  String
+  choiceIndex Int
+  quality     Int
+  createdAt   DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scenario Scenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  @@id([userId, scenarioId])
+}
+
+model SimulationEvent {
+  id      String @id
+  theme   String
+  icon    String
+  text    String
+  choices Json
+  order   Int
+}
+
+model SimulationResult {
+  userId     String   @id
+  balance    Int
+  saving     Int
+  avgQuality Float
+  pct        Int
+  passed     Boolean
+  answers    Json
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PointLedger {
+  id        String   @id @default(cuid())
+  userId    String
+  source    String
+  sourceId  String
+  points    Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, source, sourceId])
+}
