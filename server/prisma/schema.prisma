@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  password     String
+  role         Role     @default(STUDENT)
+  points       Int      @default(0)
+  streak       Int      @default(1)
+  lastLoginDay String?
+  todayLessons Int      @default(0)
+  joinedAt     DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  completedLessons  CompletedLesson[]
+  quizScores        QuizScore[]
+  badges            UserBadge[]
+  claimedChallenges ClaimedChallenge[]
+  scenarioResults   ScenarioResult[]
+  simResult         SimulationResult?
+
+  @@map("users")
+}
+
+model Module {
+  id     String   @id @default(uuid())
+  slug   String   @unique
+  title  String
+  topics String[]
+  order  Int      @default(0)
+  lesson Json
+
+  quizzes          Quiz[]
+  completedLessons CompletedLesson[]
+  quizScores       QuizScore[]
+
+  @@map("modules")
+}
+
+model Quiz {
+  id          String   @id @default(uuid())
+  moduleId    String
+  module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  question    String
+  options     String[]
+  answer      Int
+  explanation String
+  difficulty  String
+  order       Int      @default(0)
+
+  @@map("quizzes")
+}
+
+model CompletedLesson {
+  id        String   @id @default(uuid())
+  userId    String
+  moduleId  String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module    Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, moduleId])
+  @@map("completed_lessons")
+}
+
+model QuizScore {
+  id        String   @id @default(uuid())
+  userId    String
+  moduleId  String
+  correct   Int
+  total     Int
+  pct       Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module    Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, moduleId])
+  @@map("quiz_scores")
+}
+
+model UserBadge {
+  id      String @id @default(uuid())
+  userId  String
+  badgeId String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@map("user_badges")
+}
+
+model ClaimedChallenge {
+  id          String @id @default(uuid())
+  userId      String
+  challengeId String
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, challengeId])
+  @@map("claimed_challenges")
+}
+
+model Scenario {
+  id        String @id @default(uuid())
+  slug      String @unique
+  theme     String
+  situation String
+  choices   Json
+  order     Int    @default(0)
+
+  results ScenarioResult[]
+
+  @@map("scenarios")
+}
+
+model ScenarioResult {
+  id          String   @id @default(uuid())
+  userId      String
+  scenarioId  String
+  choiceIndex Int
+  quality     Int
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scenario    Scenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, scenarioId])
+  @@map("scenario_results")
+}
+
+model SimEvent {
+  id      String @id @default(uuid())
+  slug    String @unique
+  theme   String
+  icon    String
+  text    String
+  choices Json
+  order   Int    @default(0)
+
+  @@map("sim_events")
+}
+
+model SimulationResult {
+  id         String  @id @default(uuid())
+  userId     String  @unique
+  balance    Int
+  saving     Int
+  avgQuality Float
+  pct        Int
+  passed     Boolean
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("simulation_results")
+}

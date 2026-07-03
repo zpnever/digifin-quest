@@ -1,12 +1,11 @@
 @import "tailwindcss";
 
-/* 
-  Custom styles 
-*/
-
+/* Custom Theme */
 @theme {
   --color-brand-blue: #0B1F3A;
 }
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 @layer utilities {
   .fq-hover {
@@ -37,4 +36,34 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Global Dark Mode Styles */
+html {
+  scroll-behavior: smooth;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-white text-slate-900;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+html.dark body {
+  @apply bg-[#0B1F3A] text-slate-100;
+}
+
+/* Toast custom CSS vars */
+:root {
+  --toast-bg: #333;
+  --toast-color: #fff;
+}
+
+html.dark {
+  --toast-bg: #1e293b;
+  --toast-color: #e2e8f0;
 }
