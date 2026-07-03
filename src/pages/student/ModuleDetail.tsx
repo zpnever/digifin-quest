@@ -8,6 +8,7 @@ import { POINTS } from "../../constants/points";
 
 interface QuizItem { id: string; question: string; options: string[]; answer: number; explanation: string; difficulty: string; }
 interface ModuleData { id: string; slug: string; title: string; topics: string[]; lesson: any; quizzes: QuizItem[]; }
+interface ModuleListItem { id: string; slug: string; title: string; order: number; }
 
 function inferTopic(topics: string[], q: QuizItem): string {
   const text = (q.question + " " + q.options.join(" ")).toLowerCase();
@@ -25,6 +26,7 @@ export default function ModuleDetail() {
   const navigate = useNavigate();
   const { progress, completeLesson, submitQuiz } = useProgress();
   const [mod, setMod] = useState<ModuleData | null>(null);
+  const [allModules, setAllModules] = useState<ModuleListItem[]>([]);
   const [view, setView] = useState<"lesson" | "quiz">("lesson");
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [submitted, setSubmitted] = useState(false);
@@ -35,8 +37,19 @@ export default function ModuleDetail() {
     }
   }, [id]);
 
+  useEffect(() => {
+    api.get("/modules").then((res) => setAllModules(res.data.modules)).catch(console.error);
+  }, []);
+
+  // Reset state when navigating between modules
+  useEffect(() => {
+    setView("lesson");
+    setAnswers({});
+    setSubmitted(false);
+  }, [id]);
+
   const correct = mod ? mod.quizzes.reduce((n, q, i) => n + (answers[i] === q.answer ? 1 : 0), 0) : 0;
-  const pct = mod ? Math.round((correct / mod.quizzes.length) * 100) : 0;
+  const pct = mod && mod.quizzes.length > 0 ? Math.round((correct / mod.quizzes.length) * 100) : 0;
   const diffColor: Record<string, string> = { mudah: "text-emerald-500", sedang: "text-amber-500", sulit: "text-rose-500" };
 
   const weakTopics = useMemo(() => {
@@ -48,6 +61,11 @@ export default function ModuleDetail() {
     return Object.entries(miss).sort((a, b) => b[1] - a[1]);
   }, [submitted, answers, mod]);
 
+  // Determine prev/next module
+  const currentIdx = allModules.findIndex((m) => m.id === id);
+  const prevModule = currentIdx > 0 ? allModules[currentIdx - 1] : null;
+  const nextModule = currentIdx >= 0 && currentIdx < allModules.length - 1 ? allModules[currentIdx + 1] : null;
+
   if (!mod) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500" /></div>;
 
   const lessonDone = progress.completedLessons[mod.id];
@@ -56,7 +74,25 @@ export default function ModuleDetail() {
 
   return (
     <div>
-      <button onClick={() => navigate("/modules")} className="text-sm text-slate-500 hover:text-emerald-500 mb-4">← Kembali ke modul</button>
+      {/* Navigation header */}
+      <div className="flex items-center justify-between mb-4">
+        <button onClick={() => navigate("/modules")} className="text-sm text-slate-500 hover:text-emerald-500">← Kembali ke modul</button>
+        <div className="flex gap-2">
+          {prevModule && (
+            <button onClick={() => navigate(`/modules/${prevModule.id}`)}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 transition">
+              ← {prevModule.title}
+            </button>
+          )}
+          {nextModule && (
+            <button onClick={() => navigate(`/modules/${nextModule.id}`)}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white transition">
+              {nextModule.title} →
+            </button>
+          )}
+        </div>
+      </div>
+
       <Card className="p-6 mb-5">
         <h2 className="text-2xl font-bold mb-2">{mod.title}</h2>
         <div className="flex flex-wrap gap-1.5 mb-4">
@@ -89,9 +125,17 @@ export default function ModuleDetail() {
               {L.takeaways.map((t: string, i: number) => <li key={i} className="flex gap-2 text-sm text-slate-600 dark:text-slate-300"><span className="text-emerald-500">✓</span>{t}</li>)}
             </ul>
           </div>
-          <div className="mt-7">
-            {lessonDone ? <span className="text-emerald-500 font-semibold">✓ Pelajaran selesai (+{POINTS.lessonComplete} poin diperoleh)</span>
-              : <button onClick={() => completeLesson(mod.id)} className="rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-6 py-2.5 transition">Tandai pelajaran selesai (+{POINTS.lessonComplete} pts)</button>}
+          <div className="mt-7 flex items-center justify-between">
+            <div>
+              {lessonDone ? <span className="text-emerald-500 font-semibold">✓ Pelajaran selesai (+{POINTS.lessonComplete} poin diperoleh)</span>
+                : <button onClick={() => completeLesson(mod.id)} className="rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-6 py-2.5 transition">Tandai pelajaran selesai (+{POINTS.lessonComplete} pts)</button>}
+            </div>
+            {nextModule && (
+              <button onClick={() => navigate(`/modules/${nextModule.id}`)}
+                className="rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-emerald-500 hover:text-white font-bold px-6 py-2.5 transition">
+                Modul selanjutnya →
+              </button>
+            )}
           </div>
         </Card>
       ) : (
@@ -149,7 +193,15 @@ export default function ModuleDetail() {
                   <p className="text-sm text-slate-500">Kerja bagus — hanya sedikit keliru.</p>
                 )}
               </div>
-              <button onClick={() => { setAnswers({}); setSubmitted(false); }} className="mt-4 w-full text-sm text-emerald-500 font-semibold hover:underline">Ulangi kuis</button>
+              <div className="mt-4 flex items-center justify-between">
+                <button onClick={() => { setAnswers({}); setSubmitted(false); }} className="text-sm text-emerald-500 font-semibold hover:underline">Ulangi kuis</button>
+                {nextModule && (
+                  <button onClick={() => navigate(`/modules/${nextModule.id}`)}
+                    className="rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-5 py-2.5 text-sm transition">
+                    Modul selanjutnya →
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </Card>

@@ -246,7 +246,7 @@ router.post("/scenarios/:scenarioId", authenticate, async (req: AuthRequest, res
 router.post("/simulation", authenticate, async (req: AuthRequest, res) => {
   try {
     const userId = req.user!.userId;
-    const { balance, saving, avgQuality, pct, passed } = req.body;
+    const { balance, saving, avgQuality, pct, passed, choicesLog } = req.body;
 
     // Upsert: keep best result
     const existing = await prisma.simulationResult.findUnique({ where: { userId } });
@@ -254,8 +254,8 @@ router.post("/simulation", authenticate, async (req: AuthRequest, res) => {
     if (!existing || pct > existing.pct) {
       await prisma.simulationResult.upsert({
         where: { userId },
-        create: { userId, balance, saving, avgQuality, pct, passed },
-        update: { balance, saving, avgQuality, pct, passed },
+        create: { userId, balance, saving, avgQuality, pct, passed, choicesLog: choicesLog ?? null },
+        update: { balance, saving, avgQuality, pct, passed, choicesLog: choicesLog ?? null },
       });
     }
 

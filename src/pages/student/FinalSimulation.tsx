@@ -5,7 +5,9 @@ import { Card, Stat } from "../../components/ui";
 import { cls } from "../../lib/utils";
 import { SIM_START_BALANCE } from "../../constants/points";
 
-interface SimEventData { id: string; slug: string; theme: string; icon: string; text: string; choices: { t: string; quality: number; dBalance: number; dSaving: number; outcome: string }[]; }
+interface SimChoice { t: string; quality: number; dBalance: number; dSaving: number; outcome: string; }
+interface SimEventData { id: string; slug: string; theme: string; icon: string; text: string; choices: SimChoice[]; }
+interface ChoiceLog { eventId: string; eventSlug: string; choiceIndex: number; quality: number; dBalance: number; dSaving: number; }
 
 export default function FinalSimulation() {
   const { progress, finishSimulation } = useProgress();
@@ -15,6 +17,7 @@ export default function FinalSimulation() {
   const [balance, setBalance] = useState(SIM_START_BALANCE);
   const [saving, setSaving] = useState(0);
   const [qualities, setQualities] = useState<number[]>([]);
+  const [choicesLog, setChoicesLog] = useState<ChoiceLog[]>([]);
   const [done, setDone] = useState(false);
 
   useEffect(() => {
@@ -28,10 +31,19 @@ export default function FinalSimulation() {
   function choose(ci: number) {
     if (picked !== null) return;
     setPicked(ci);
-    const c = events[idx].choices[ci];
+    const ev = events[idx];
+    const c = ev.choices[ci];
     setBalance((b) => b + c.dBalance);
     setSaving((s) => s + c.dSaving);
     setQualities((q) => [...q, c.quality]);
+    setChoicesLog((log) => [...log, {
+      eventId: ev.id,
+      eventSlug: ev.slug,
+      choiceIndex: ci,
+      quality: c.quality,
+      dBalance: c.dBalance,
+      dSaving: c.dSaving,
+    }]);
   }
 
   function next() {
@@ -41,7 +53,12 @@ export default function FinalSimulation() {
     const pct = Math.round((avgQuality / 2) * 100);
     const passed = pct >= 60;
     setDone(true);
-    finishSimulation({ balance, saving, avgQuality: Math.round(avgQuality * 100) / 100, pct, passed });
+    finishSimulation({
+      balance, saving,
+      avgQuality: Math.round(avgQuality * 100) / 100,
+      pct, passed,
+      choicesLog,
+    });
   }
 
   if (done) {
@@ -58,6 +75,37 @@ export default function FinalSimulation() {
           <Stat label="Kualitas Keputusan" value={`${pct}%`} icon="🧠" />
           <Stat label="Status" value={passed ? "Lulus" : "Ulangi"} icon={passed ? "✅" : "🔁"} small />
         </div>
+
+        {/* Per-event summary */}
+        <div className="mb-6">
+          <h3 className="font-bold mb-3">Riwayat Keputusan</h3>
+          <div className="space-y-2">
+            {choicesLog.map((log, i) => {
+              const ev = events.find(e => e.id === log.eventId);
+              return (
+                <div key={i} className={cls("rounded-lg p-3 border text-sm",
+                  log.quality === 2 ? "border-emerald-200 bg-emerald-50 dark:bg-emerald-500/10 dark:border-emerald-500/20"
+                  : log.quality === 1 ? "border-amber-200 bg-amber-50 dark:bg-amber-400/10 dark:border-amber-400/20"
+                  : "border-rose-200 bg-rose-50 dark:bg-rose-500/10 dark:border-rose-500/20")}>
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold">{ev?.icon} Peristiwa {i + 1}: {ev?.theme}</span>
+                    <span className={cls("text-xs font-bold px-2 py-0.5 rounded-full",
+                      log.quality === 2 ? "bg-emerald-200 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300"
+                      : log.quality === 1 ? "bg-amber-200 text-amber-800 dark:bg-amber-400/20 dark:text-amber-300"
+                      : "bg-rose-200 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300")}>
+                      {log.quality === 2 ? "Baik" : log.quality === 1 ? "Cukup" : "Risiko"}
+                    </span>
+                  </div>
+                  <div className="flex gap-4 mt-1 text-xs text-slate-500">
+                    <span>Saldo: {log.dBalance >= 0 ? "+" : ""}{fmt(log.dBalance)}</span>
+                    <span>Tabungan: {log.dSaving >= 0 ? "+" : ""}{fmt(log.dSaving)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         <div className={cls("rounded-xl p-5 border mb-6", passed ? "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200" : "bg-amber-50 dark:bg-amber-400/10 border-amber-200")}>
           <p className="font-bold mb-1">{passed ? "🎉 Selamat!" : "Tetap semangat!"}</p>
           <p className="text-sm text-slate-600 dark:text-slate-300">
@@ -65,7 +113,7 @@ export default function FinalSimulation() {
               : "Beberapa keputusan masih berisiko. Tinjau modul dan ulangi simulasi."}
           </p>
         </div>
-        <button onClick={() => { setIdx(0); setPicked(null); setBalance(SIM_START_BALANCE); setSaving(0); setQualities([]); setDone(false); }}
+        <button onClick={() => { setIdx(0); setPicked(null); setBalance(SIM_START_BALANCE); setSaving(0); setQualities([]); setChoicesLog([]); setDone(false); }}
           className="rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-6 py-2.5 transition">Ulangi Simulasi</button>
       </Card>
     );

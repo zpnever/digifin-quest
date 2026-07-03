@@ -77,7 +77,10 @@ export function useProgress() {
     }
   };
 
-  const finishSimulation = async (result: { balance: number; saving: number; avgQuality: number; pct: number; passed: boolean }) => {
+  const finishSimulation = async (result: {
+    balance: number; saving: number; avgQuality: number; pct: number; passed: boolean;
+    choicesLog?: { eventId: string; eventSlug: string; choiceIndex: number; quality: number; dBalance: number; dSaving: number }[];
+  }) => {
     try {
       await api.post("/progress/simulation", result);
       await fetchProgress();

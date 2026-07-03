@@ -7,6 +7,7 @@ import { cls } from "../lib/utils";
 const NAV_ITEMS = [
   { path: "/admin", label: "📈 Analitik", exact: true },
   { path: "/admin/modules", label: "📝 Modul" },
+  { path: "/admin/games", label: "🎮 Game" },
   { path: "/admin/users", label: "👥 Pengguna" },
 ];
 

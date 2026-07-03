@@ -157,6 +157,7 @@ model SimulationResult {
   avgQuality Float
   pct        Int
   passed     Boolean
+  choicesLog Json?
   user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("simulation_results")

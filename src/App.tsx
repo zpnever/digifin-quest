@@ -28,6 +28,7 @@ import Profile from "./pages/student/Profile";
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ModuleManager from "./pages/admin/ModuleManager";
+import GameManager from "./pages/admin/GameManager";
 import UserManager from "./pages/admin/UserManager";
 
 function AuthRedirect({ children }: { children: React.ReactNode }) {
@@ -77,6 +78,7 @@ export default function App() {
         <Route element={<ProtectedRoute role="ADMIN"><AdminLayout /></ProtectedRoute>}>
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/modules" element={<ModuleManager />} />
+          <Route path="/admin/games" element={<GameManager />} />
           <Route path="/admin/users" element={<UserManager />} />
         </Route>
 
