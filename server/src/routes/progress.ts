@@ -113,12 +113,20 @@ router.post("/quizzes/:moduleId", authenticate, async (req: AuthRequest, res) =>
     const pct = Math.round((correct / total) * 100);
     const pointsToAdd = correct * 15; // POINTS.quizPassPerCorrect
 
-    // Upsert quiz score (keep best score)
-    await prisma.quizScore.upsert({
+    // Get existing score
+    const existing = await prisma.quizScore.findUnique({
       where: { userId_moduleId: { userId, moduleId } },
-      create: { userId, moduleId, correct, total, pct },
-      update: { correct, total, pct },
+      select: { pct: true },
     });
+
+    // Only update if no existing score or new score is higher
+    if (!existing || pct > existing.pct) {
+      await prisma.quizScore.upsert({
+        where: { userId_moduleId: { userId, moduleId } },
+        create: { userId, moduleId, correct, total, pct },
+        update: { correct, total, pct },
+      });
+    }
 
     // Award points
     await prisma.user.update({
