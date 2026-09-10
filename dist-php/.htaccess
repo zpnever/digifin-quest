@@ -1,0 +1,23 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # 1. Biarkan request ke folder /api ditangani oleh api/.htaccess
+    RewriteRule ^api(/.*)?$ - [L]
+
+    # 2. Jika request adalah file fisik atau folder fisik, layani langsung (CSS, JS, gambar, dll)
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # 3. Semua rute frontend SPA (React Router) diarahkan ke index.html
+    RewriteRule ^ index.html [L]
+</IfModule>
+
+# Keamanan dasar: cegah akses ke file tersembunyi seperti .git, .env
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+Options -Indexes

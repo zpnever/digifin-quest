@@ -1,0 +1,15 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /api/
+
+    # Meneruskan header HTTP Authorization ke PHP (sangat penting untuk JWT pada Apache/FastCGI)
+    SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Jika file atau folder fisik tidak ada, arahkan ke index.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php?__route=$1 [QSA,L]
+</IfModule>
+
+Options -Indexes
